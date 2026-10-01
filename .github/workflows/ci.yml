@@ -1,0 +1,37 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  firmware:
+    name: build stm32 firmware
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # PlatformIO downloads the ARM compiler and ST's HAL on first use.
+      # Caching them makes later runs much faster.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('firmware/stm32/platformio.ini') }}
+
+      - name: install platformio
+        run: pip install platformio
+
+      - name: build
+        run: pio run -d firmware/stm32
+
+      - name: keep the built firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-nucleo_l432kc
+          path: |
+            firmware/stm32/.pio/build/nucleo_l432kc/firmware.elf
+            firmware/stm32/.pio/build/nucleo_l432kc/firmware.bin
