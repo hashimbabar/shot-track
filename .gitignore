@@ -1,0 +1,28 @@
+# STM32CubeIDE build output
+Debug/
+Release/
+*.o
+*.d
+*.elf
+*.map
+*.list
+*.su
+*.cyclo
+
+# IDE and launch state that differs per machine
+.metadata/
+*.launch
+.settings/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# host build
+build/
+
+# OS junk
+.DS_Store
+Thumbs.db
