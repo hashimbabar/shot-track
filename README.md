@@ -18,17 +18,33 @@ The full plan is in [docs/handoff.md](docs/handoff.md).
 
 ## Status
 
-Phase 1, step 1 (bring-up): code written, not yet run on the board.
+Phase 1, step 1 (bring-up): LED blink and serial output with FreeRTOS. The
+firmware builds in CI but hasn't been run on the board yet. Steps for running
+it are in [docs/bringup.md](docs/bringup.md).
+
+## Building
+
+The firmware is a PlatformIO project in `firmware/stm32/`, using ST's HAL
+drivers and FreeRTOS. From that folder:
+
+```
+pio run              # build
+pio run -t upload    # flash the Nucleo over its built-in ST-LINK
+pio device monitor   # serial output at 115200 baud
+```
+
+GitHub Actions builds it on every push.
 
 ## Repo layout
 
 ```
-firmware/stm32/   STM32CubeIDE project for the Nucleo
+firmware/stm32/   PlatformIO project for the NUCLEO-L432KC (HAL + FreeRTOS)
 detect/           shot detection, pure C (not started)
 host/             PC build of detect/ for tests (not started)
 tools/            Python scripts for parsing and plotting logs (not started)
 tests/            pytest tests and recorded sessions (not started)
 docs/             plan, bring-up notes, wiring, captures, plots
+.github/          CI
 ```
 
 ## Results
