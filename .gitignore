@@ -1,18 +1,8 @@
-# STM32CubeIDE build output
-Debug/
-Release/
-*.o
-*.d
-*.elf
-*.map
-*.list
-*.su
-*.cyclo
-
-# IDE and launch state that differs per machine
-.metadata/
-*.launch
-.settings/
+# PlatformIO build output and per-machine VS Code files
+.pio/
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
 
 # Python
 __pycache__/
