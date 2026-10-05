@@ -49,23 +49,33 @@ def detect(cli, path):
 
 
 def read_labels(path):
-    """Return (labelled release times in ms, is_synthetic) for one session."""
+    """Return (labelled release times in ms, kind) for one session.
+
+    kind is "SYNTHETIC" (simulator header), "recorded" (the firmware's log
+    header) or "unknown". The times are None if the file has no shot_id
+    column, e.g. a recording straight off the SD card before it's labelled."""
     windows = {}
-    synthetic = False
+    kind = "unknown"
     with open(path) as f:
         rows = []
         for line in f:
             if line.startswith("#"):
-                synthetic |= "SYNTHETIC" in line
+                if "SYNTHETIC" in line:
+                    kind = "SYNTHETIC"
+                elif "shottrack log" in line and kind == "unknown":
+                    kind = "recorded"
             else:
                 rows.append(line)
-    for row in csv.DictReader(rows):
+    reader = csv.DictReader(rows)
+    if "shot_id" not in (reader.fieldnames or []):
+        return None, kind
+    for row in reader:
         sid = int(row.get("shot_id") or 0)
         if sid:
             windows.setdefault(sid, []).append(int(row["t_ms"]))
     # The label window is centred on the release.
     releases = [(min(ts) + max(ts)) // 2 for _, ts in sorted(windows.items())]
-    return releases, synthetic
+    return releases, kind
 
 
 def match(detected, labelled):
@@ -91,11 +101,13 @@ def main():
     print(f"{'session':32} {'data':9} {'labelled':>8} {'detected':>8} {'correct':>7} {'false+':>6} {'missed':>6}")
     bad = 0
     for path in args.sessions:
-        labelled, synthetic = read_labels(path)
+        labelled, kind = read_labels(path)
         detected = detect(cli, path)
+        if labelled is None:
+            print(f"{os.path.basename(path):32} {kind:9} {'n/a':>8} {len(detected):8} {'n/a':>7} {'n/a':>6} {'n/a':>6}")
+            continue
         tp, fp, fn = match(detected, labelled)
         bad += (fp + fn) > 0
-        kind = "SYNTHETIC" if synthetic else "real"
         print(f"{os.path.basename(path):32} {kind:9} {len(labelled):8} {len(detected):8} {tp:7} {fp:6} {fn:6}")
 
     if args.check and bad:

@@ -54,8 +54,9 @@ def main():
 
     t, gyro_mag = load(args.session)
     detected = np.array(replay.detect(replay.build_cli(), args.session)) / 1000.0
-    labelled, synthetic = replay.read_labels(args.session)
-    labelled = np.array(labelled) / 1000.0
+    labelled, kind = replay.read_labels(args.session)
+    synthetic = kind == "SYNTHETIC"
+    labelled = np.array(labelled or []) / 1000.0
 
     lo = args.start if args.start is not None else t[0]
     hi = args.end if args.end is not None else t[-1]
@@ -82,9 +83,9 @@ def main():
     ax.scatter(d, peak_y + 60, marker="v", s=55, color=ACCENT, edgecolor=SURFACE, linewidth=1.5,
                label=f"detected shot ({len(d)})", zorder=3)
 
-    kind = "SYNTHETIC DATA" if synthetic else "recorded session"
+    heading = {"SYNTHETIC": "SYNTHETIC DATA", "recorded": "recorded session"}.get(kind, "session")
     title = args.title or os.path.basename(args.session)
-    ax.set_title(f"{kind}: {title}", loc="left", color=INK, fontsize=11, fontweight="bold")
+    ax.set_title(f"{heading}: {title}", loc="left", color=INK, fontsize=11, fontweight="bold")
     ax.set_xlabel("time (s)")
     ax.set_ylabel("gyro magnitude (deg/s)")
     ax.set_xlim(lo, hi)
