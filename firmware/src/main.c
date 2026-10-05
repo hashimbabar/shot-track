@@ -1,50 +1,20 @@
 /*
- * main.c - shottrack firmware, phase 1 step 1: bring-up.
+ * main.c - ShotTrack firmware entry point.
  *
- * Sets up the clock, LED and serial port, prints a hello message, then
- * starts FreeRTOS with two tasks:
- *   - blink:     toggles the green LED every 500 ms
- *   - heartbeat: prints the uptime and free heap once a second
+ * Sets up the clock and peripherals, prints a banner, creates the
+ * FreeRTOS tasks (app.c) and starts the scheduler. After that, everything
+ * happens in the tasks:
  *
- * If both the LED and the serial output keep going, the toolchain, clock
- * setup, UART, interrupts and the RTOS scheduler all work.
+ *   sampling (prio 4)  200 Hz IMU reads, woken by the TIM6 interrupt
+ *   detect   (prio 3)  shot detection on each sample
+ *   ui       (prio 2)  button, LED, stats line on the serial port
+ *   logger   (prio 1)  CSV to the microSD card
+ *
+ * See docs/architecture.md for the diagrams.
  */
 #include <stdio.h>
+#include "app.h"
 #include "board.h"
-#include "FreeRTOS.h"
-#include "task.h"
-
-#define BLINK_PERIOD_MS     500
-#define HEARTBEAT_PERIOD_MS 1000
-
-static void blink_task(void *arg)
-{
-    (void)arg;
-    TickType_t last_wake = xTaskGetTickCount();
-
-    for (;;) {
-        led_toggle();
-        /* xTaskDelayUntil wakes at fixed 500 ms steps measured from the
-         * last wake-up, so the period doesn't drift by however long the
-         * loop body took. (vTaskDelay would wait 500 ms from *now*.) */
-        xTaskDelayUntil(&last_wake, pdMS_TO_TICKS(BLINK_PERIOD_MS));
-    }
-}
-
-static void heartbeat_task(void *arg)
-{
-    (void)arg;
-    TickType_t last_wake = xTaskGetTickCount();
-    unsigned long beat = 0;
-
-    for (;;) {
-        printf("beat %lu, uptime %lu ms, free heap %u bytes\r\n",
-               beat++,
-               (unsigned long)xTaskGetTickCount(),
-               (unsigned)xPortGetFreeHeapSize());
-        xTaskDelayUntil(&last_wake, pdMS_TO_TICKS(HEARTBEAT_PERIOD_MS));
-    }
-}
 
 int main(void)
 {
@@ -57,33 +27,24 @@ int main(void)
     lse_ok = board_clock_init();
     board_gpio_init();
     board_uart_init();
+    board_i2c_init();
+    board_spi_init();
+    board_timer_init();
 
-    /* By default the C library may hold printf output in a buffer until it
-     * fills up. Turn buffering off so every printf goes out right away. */
+    /* Turn off stdout buffering so printf output goes out immediately. */
     setvbuf(stdout, NULL, _IONBF, 0);
 
-    /* Print before creating any tasks: once a task is created, interrupts
-     * stay masked until the scheduler starts, so HAL_Delay() would hang. */
-    printf("\r\nhello from shottrack\r\n");
+    /* Plain printf is fine here: no tasks exist yet. Once the scheduler
+     * runs, tasks use console_printf(), which takes a mutex. */
+    printf("\r\nShotTrack firmware\r\n");
     printf("system clock: %lu Hz\r\n", (unsigned long)SystemCoreClock);
     printf("32 kHz crystal: %s\r\n", lse_ok ? "ok" : "FAILED (clock is less accurate)");
 
-    /* Stack sizes are in words (4 bytes). printf needs a fair amount of
-     * stack, so heartbeat gets 4x the minimum. Both tasks get the same
-     * low priority; nothing here is time-critical yet. */
-    if (xTaskCreate(blink_task, "blink", configMINIMAL_STACK_SIZE, NULL,
-                    tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-        fatal_error("could not create blink task");
-    }
-    if (xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE * 4, NULL,
-                    tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-        fatal_error("could not create heartbeat task");
-    }
-
-    printf("starting scheduler\r\n");
+    app_start();
+    printf("starting scheduler, free heap %u bytes\r\n", (unsigned)xPortGetFreeHeapSize());
     vTaskStartScheduler();
 
-    /* Only reached if there wasn't enough heap for the idle/timer tasks. */
+    /* Only reached if there wasn't enough heap for the idle task. */
     fatal_error("scheduler returned");
 }
 

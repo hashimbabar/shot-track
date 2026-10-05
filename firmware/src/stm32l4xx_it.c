@@ -8,6 +8,7 @@
  * SVC_Handler and PendSV_Handler are defined by FreeRTOS's port.c (see the
  * renames at the bottom of FreeRTOSConfig.h).
  */
+#include "app.h"
 #include "board.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -62,4 +63,25 @@ void UsageFault_Handler(void)
 
 void DebugMon_Handler(void)
 {
+}
+
+/* ---- peripheral interrupts ----
+ * Both are kept tiny: clear the flag and wake a task (app_*_isr). The
+ * real work happens in the tasks. */
+
+/* TIM6 update event, 200 times a second. The DAC shares this vector, but
+ * the DAC is unused, so it is always the timer. */
+void TIM6_DAC_IRQHandler(void)
+{
+    if (__HAL_TIM_GET_FLAG(&htim6, TIM_FLAG_UPDATE)) {
+        app_sample_timer_isr();
+    }
+}
+
+/* Button on PB0 -> EXTI line 0. */
+void EXTI0_IRQHandler(void)
+{
+    if (__HAL_GPIO_EXTI_GET_IT(BUTTON_PIN)) {
+        app_button_isr();
+    }
 }

@@ -31,7 +31,7 @@ void fatal_error(const char *what);
 /* ---- memory ---- */
 #define configSUPPORT_DYNAMIC_ALLOCATION        1
 #define configSUPPORT_STATIC_ALLOCATION         0
-#define configTOTAL_HEAP_SIZE                   (16 * 1024) /* out of 64 KB of SRAM */
+#define configTOTAL_HEAP_SIZE                   (20 * 1024) /* out of 64 KB of SRAM: task stacks + queues */
 
 /* ---- features ---- */
 #define configUSE_MUTEXES                       1
@@ -41,10 +41,9 @@ void fatal_error(const char *what);
 #define configUSE_TASK_NOTIFICATIONS            1
 #define configUSE_CO_ROUTINES                   0
 
-#define configUSE_TIMERS                        1
-#define configTIMER_TASK_PRIORITY               (configMAX_PRIORITIES - 1)
-#define configTIMER_QUEUE_LENGTH                8
-#define configTIMER_TASK_STACK_DEPTH            (configMINIMAL_STACK_SIZE * 2)
+/* Software timers are not used (the 200 Hz tick is a hardware timer), so
+ * no timer service task is created. */
+#define configUSE_TIMERS                        0
 
 /* ---- hooks and safety checks ---- */
 #define configUSE_IDLE_HOOK                     0
