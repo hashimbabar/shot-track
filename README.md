@@ -3,7 +3,7 @@
 [![ci](https://github.com/hashimbabar/shot-track/actions/workflows/ci.yml/badge.svg)](https://github.com/hashimbabar/shot-track/actions/workflows/ci.yml)
 
 A wrist-worn sensor that counts my basketball shots during practice, like a
-step counter for shots. I play intramural ball at TMU and wanted real numbers
+step counter for shots. I play basketball often and wanted real numbers
 on how many shots I actually put up, instead of guessing.
 
 **Status:** Firmware, driver and host tests complete and passing in CI;
