@@ -6,28 +6,21 @@ on:
 
 jobs:
   firmware:
-    name: build stm32 firmware
+    name: build firmware (nucleo_l432kc)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       # PlatformIO downloads the ARM compiler and ST's HAL on first use.
-      # Caching them makes later runs much faster.
       - uses: actions/cache@v4
         with:
           path: ~/.platformio
-          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
-
-      - name: install platformio
-        run: pip install platformio
-
+          key: pio-fw-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+      - run: pip install platformio
       - name: build
         run: pio run -e nucleo_l432kc
-
       # FreeRTOS's Cortex-M4F port needs hard-float. Check the linked ELF
       # really says so, instead of trusting that fpu.py did its job.
       - name: check the firmware uses the hardware fpu
@@ -35,11 +28,25 @@ jobs:
           readelf=~/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-readelf
           $readelf -A .pio/build/nucleo_l432kc/firmware.elf | tee attrs.txt
           grep -q "Tag_ABI_VFP_args: VFP registers" attrs.txt
-
-      - name: keep the built firmware
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: firmware-nucleo_l432kc
           path: |
             .pio/build/nucleo_l432kc/firmware.elf
             .pio/build/nucleo_l432kc/firmware.bin
+
+  unit-tests:
+    name: unit tests (native, Unity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-native-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+      - run: pip install platformio
+      - name: run tests
+        run: pio test -e native
