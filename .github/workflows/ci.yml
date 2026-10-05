@@ -20,20 +20,20 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.platformio
-          key: pio-${{ runner.os }}-${{ hashFiles('firmware/stm32/platformio.ini') }}
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
 
       - name: install platformio
         run: pip install platformio
 
       - name: build
-        run: pio run -d firmware/stm32
+        run: pio run -e nucleo_l432kc
 
       # FreeRTOS's Cortex-M4F port needs hard-float. Check the linked ELF
       # really says so, instead of trusting that fpu.py did its job.
       - name: check the firmware uses the hardware fpu
         run: |
           readelf=~/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-readelf
-          $readelf -A firmware/stm32/.pio/build/nucleo_l432kc/firmware.elf | tee attrs.txt
+          $readelf -A .pio/build/nucleo_l432kc/firmware.elf | tee attrs.txt
           grep -q "Tag_ABI_VFP_args: VFP registers" attrs.txt
 
       - name: keep the built firmware
@@ -41,5 +41,5 @@ jobs:
         with:
           name: firmware-nucleo_l432kc
           path: |
-            firmware/stm32/.pio/build/nucleo_l432kc/firmware.elf
-            firmware/stm32/.pio/build/nucleo_l432kc/firmware.bin
+            .pio/build/nucleo_l432kc/firmware.elf
+            .pio/build/nucleo_l432kc/firmware.bin

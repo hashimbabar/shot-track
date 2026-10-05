@@ -1,0 +1,12 @@
+{
+  "name": "FreeRTOS",
+  "version": "11.1.0",
+  "description": "FreeRTOS kernel V11.1.0, trimmed to the Cortex-M4F GCC port and heap_4. Copied unmodified from github.com/FreeRTOS/FreeRTOS-Kernel tag V11.1.0. Only built for the STM32 env.",
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "ststm32",
+  "build": {
+    "srcDir": "src",
+    "includeDir": "include"
+  }
+}
