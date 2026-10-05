@@ -1,0 +1,8 @@
+{
+  "name": "FatFs",
+  "version": "0.16.0",
+  "description": "ChaN's FatFs R0.16 (ff.c, ff.h, diskio.h), copied unmodified from github.com/STMicroelectronics/stm32_mw_fatfs. Configured by firmware/include/ffconf.h; the disk functions are in firmware/src/diskio.c. Only built for the STM32 env.",
+  "license": "BSD-3-Clause",
+  "frameworks": "*",
+  "platforms": "ststm32"
+}
