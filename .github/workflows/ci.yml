@@ -50,3 +50,23 @@ jobs:
       - run: pip install platformio
       - name: run tests
         run: pio test -e native
+
+  replay:
+    name: replay synthetic sessions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r tools/requirements.txt
+      # SYNTHETIC data only: these sessions come from the simulator, not a
+      # wrist. Passing means the detection code behaves as designed, not
+      # that it is accurate on real shots.
+      - name: generate synthetic sessions
+        run: |
+          for seed in 1 2 3; do
+            python tools/simulate_session.py --seed $seed --shots 25 --out data/synthetic/session_0$seed.csv
+          done
+      - name: replay through the host-built detector
+        run: python tools/replay.py --check data/synthetic/*.csv
