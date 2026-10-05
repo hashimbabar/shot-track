@@ -16,3 +16,9 @@ build/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Synthetic sessions are regenerated from fixed seeds (see README), not committed
+data/synthetic/*.csv
+
+# Personal study notes, kept out of the repo
+WALKTHROUGH.md
