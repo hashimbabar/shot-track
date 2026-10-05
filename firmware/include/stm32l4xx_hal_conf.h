@@ -4,9 +4,9 @@
   * @author  MCD Application Team
   * @brief   HAL configuration for shottrack.
   *          Copied from ST's stm32l4xx_hal_conf_template.h. The only change
-  *          is the module list below: just the HAL modules this firmware
-  *          uses are enabled. Turn more on as later steps need them
-  *          (I2C for the IMU, TIM for the 200 Hz timer, SPI for the SD card).
+  *          is the module list below: only the HAL modules this firmware
+  *          uses are enabled (GPIO, UART console, I2C for the IMU, TIM6
+  *          for the 200 Hz tick, SPI for the SD card).
   ******************************************************************************
   * @attention
   *
@@ -56,7 +56,7 @@
 #define HAL_GPIO_MODULE_ENABLED
 /* #define HAL_HASH_MODULE_ENABLED */
 /* #define HAL_HCD_MODULE_ENABLED */
-/* #define HAL_I2C_MODULE_ENABLED */
+#define HAL_I2C_MODULE_ENABLED
 /* #define HAL_IRDA_MODULE_ENABLED */
 /* #define HAL_IWDG_MODULE_ENABLED */
 /* #define HAL_LCD_MODULE_ENABLED */
@@ -79,10 +79,10 @@
 /* #define HAL_SD_MODULE_ENABLED */
 /* #define HAL_SMARTCARD_MODULE_ENABLED */
 /* #define HAL_SMBUS_MODULE_ENABLED */
-/* #define HAL_SPI_MODULE_ENABLED */
+#define HAL_SPI_MODULE_ENABLED
 /* #define HAL_SRAM_MODULE_ENABLED */
 /* #define HAL_SWPMI_MODULE_ENABLED */
-/* #define HAL_TIM_MODULE_ENABLED */
+#define HAL_TIM_MODULE_ENABLED
 /* #define HAL_TSC_MODULE_ENABLED */
 #define HAL_UART_MODULE_ENABLED
 /* #define HAL_USART_MODULE_ENABLED */

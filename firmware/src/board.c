@@ -1,10 +1,14 @@
 /*
- * board.c - clock, GPIO and UART setup for the NUCLEO-L432KC.
+ * board.c - clock, GPIO, UART, I2C, SPI and timer setup for the
+ * NUCLEO-L432KC. Pin choices are explained in board.h.
  */
 #include <string.h>
 #include "board.h"
 
 UART_HandleTypeDef huart2;
+I2C_HandleTypeDef hi2c1;
+SPI_HandleTypeDef hspi1;
+TIM_HandleTypeDef htim6;
 
 /*
  * Clock tree:
@@ -85,14 +89,36 @@ void board_gpio_init(void)
 {
     GPIO_InitTypeDef gpio = {0};
 
+    __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
+    /* LED and debug pins: push-pull outputs, start low. */
     HAL_GPIO_WritePin(LED_GPIO_PORT, LED_PIN, GPIO_PIN_RESET);
     gpio.Pin = LED_PIN;
     gpio.Mode = GPIO_MODE_OUTPUT_PP;
     gpio.Pull = GPIO_NOPULL;
     gpio.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LED_GPIO_PORT, &gpio);
+
+    HAL_GPIO_WritePin(DBG_GPIO_PORT, DBG_SAMPLE_PIN | DBG_SD_PIN, GPIO_PIN_RESET);
+    gpio.Pin = DBG_SAMPLE_PIN | DBG_SD_PIN;
+    gpio.Speed = GPIO_SPEED_FREQ_HIGH; /* sharp edges for the logic analyzer */
+    HAL_GPIO_Init(DBG_GPIO_PORT, &gpio);
+
+    /* SD chip select: output, idle high (card not selected). */
+    HAL_GPIO_WritePin(SD_CS_GPIO_PORT, SD_CS_PIN, GPIO_PIN_SET);
+    gpio.Pin = SD_CS_PIN;
+    HAL_GPIO_Init(SD_CS_GPIO_PORT, &gpio);
+
+    /* Button: input with pull-up, interrupt on the falling edge (press).
+     * The EXTI interrupt is enabled later by the UI task, once there is a
+     * task for it to wake. */
+    gpio.Pin = BUTTON_PIN;
+    gpio.Mode = GPIO_MODE_IT_FALLING;
+    gpio.Pull = GPIO_PULLUP;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(BUTTON_GPIO_PORT, &gpio);
+    HAL_NVIC_SetPriority(BUTTON_IRQn, IRQ_PRIO_BUTTON, 0);
 }
 
 /* 115200 baud, 8 data bits, no parity, 1 stop bit ("8N1"). The pin setup
@@ -115,9 +141,86 @@ void board_uart_init(void)
     }
 }
 
-void led_toggle(void)
+/*
+ * I2C1 at 400 kHz ("fast mode"). The L4 sets I2C timing with one 32-bit
+ * TIMINGR value instead of a simple clock divider. 0x00702991 is the
+ * value ST's timing tool gives for 400 kHz from an 80 MHz clock. Decoded
+ * (RM0394, I2C_TIMINGR): PRESC = 0 -> 12.5 ns ticks, SCLL = 145 -> 1.84 us
+ * low, SCLH = 41 -> 0.53 us high (plus sync and rise time), SCLDEL = 7,
+ * SDADEL = 0. One period is about 2.5 us = 400 kHz.
+ */
+void board_i2c_init(void)
 {
-    HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
+    hi2c1.Instance = IMU_I2C;
+    hi2c1.Init.Timing = 0x00702991;
+    hi2c1.Init.OwnAddress1 = 0;
+    hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    hi2c1.Init.OwnAddress2 = 0;
+    hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+    hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    if (HAL_I2C_Init(&hi2c1) != HAL_OK) {
+        Error_Handler();
+    }
+    /* Analog noise filter on: ignores glitches shorter than ~50 ns, which
+     * helps on a breadboard with long jumper wires. */
+    if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK) {
+        Error_Handler();
+    }
+}
+
+/*
+ * SPI1 in mode 0 (clock idles low, sample on the rising edge), which is
+ * what SD cards use in SPI mode. It starts slow (80 MHz / 256 = 312 kHz)
+ * because a card must be initialised below 400 kHz; sd_spi.c speeds it
+ * up once the card is ready.
+ */
+void board_spi_init(void)
+{
+    hspi1.Instance = SD_SPI;
+    hspi1.Init.Mode = SPI_MODE_MASTER;
+    hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+    hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+    hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+    hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+    hspi1.Init.NSS = SPI_NSS_SOFT; /* chip select driven by hand */
+    hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+    hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+    hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+    hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+    hspi1.Init.CRCPolynomial = 7;
+    hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+    hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+    if (HAL_SPI_Init(&hspi1) != HAL_OK) {
+        Error_Handler();
+    }
+}
+
+/* TIM6 counts up at 10 kHz and overflows every 50 counts = 200 Hz. Each
+ * overflow fires TIM6_DAC_IRQHandler (stm32l4xx_it.c), which wakes the
+ * sampling task. Started later by the sampling task with
+ * HAL_TIM_Base_Start_IT(), once the IMU is ready. */
+void board_timer_init(void)
+{
+    htim6.Instance = SAMPLE_TIMER;
+    htim6.Init.Prescaler = 7999;
+    htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim6.Init.Period = 49;
+    htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    if (HAL_TIM_Base_Init(&htim6) != HAL_OK) {
+        Error_Handler();
+    }
+}
+
+void led_set(bool on)
+{
+    HAL_GPIO_WritePin(LED_GPIO_PORT, LED_PIN, on ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+bool button_is_pressed(void)
+{
+    return HAL_GPIO_ReadPin(BUTTON_GPIO_PORT, BUTTON_PIN) == GPIO_PIN_RESET;
 }
 
 /* Crude delay that works with interrupts off (HAL_Delay needs the tick
@@ -141,9 +244,11 @@ void fatal_error(const char *what)
     HAL_UART_Transmit(&huart2, (uint8_t *)what, (uint16_t)strlen(what), HAL_MAX_DELAY);
     HAL_UART_Transmit(&huart2, (uint8_t *)suffix, sizeof(suffix) - 1, HAL_MAX_DELAY);
 
-    board_gpio_init();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    GPIO_InitTypeDef gpio = {.Pin = LED_PIN, .Mode = GPIO_MODE_OUTPUT_PP};
+    HAL_GPIO_Init(LED_GPIO_PORT, &gpio);
     for (;;) {
-        led_toggle();
+        HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
         busy_wait(200000);
     }
 }
