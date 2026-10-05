@@ -27,7 +27,9 @@ is synthetic and labelled as such.
 
 Built from scratch where it matters for learning: the MPU-6050 driver is
 written from the register map, and the SD card SPI driver from the SD spec.
-FreeRTOS, FatFs and ST's HAL are used as-is.
+FreeRTOS, FatFs and ST's HAL are used as-is. The MPU-6050 driver is also
+published on its own as
+[hashimbabar/mpu6050-driver](https://github.com/hashimbabar/mpu6050-driver).
 
 ## Architecture
 
