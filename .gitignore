@@ -18,7 +18,7 @@ build/
 Thumbs.db
 
 # Synthetic sessions are regenerated from fixed seeds (see README), not committed
-data/synthetic/*.csv
+data/sim/*.csv
 
 # Personal study notes, kept out of the repo
 WALKTHROUGH.md

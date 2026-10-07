@@ -66,7 +66,7 @@ jobs:
       - name: generate synthetic sessions
         run: |
           for seed in 1 2 3; do
-            python tools/simulate_session.py --seed $seed --shots 25 --out data/synthetic/session_0$seed.csv
+            python tools/simulate_session.py --seed $seed --shots 25 --out data/sim/session_0$seed.csv
           done
       - name: replay through the host-built detector
-        run: python tools/replay.py --check data/synthetic/*.csv
+        run: python tools/replay.py --check data/sim/*.csv

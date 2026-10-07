@@ -11,8 +11,8 @@ Labels come from the shot_id column that tools/simulate_session.py writes.
 Real recordings will need hand-counted labels added the same way.
 
 Usage:
-    python tools/replay.py data/synthetic/*.csv
-    python tools/replay.py --check data/synthetic/*.csv   # exit 1 on any miss or false positive
+    python tools/replay.py data/sim/*.csv
+    python tools/replay.py --check data/sim/*.csv   # exit 1 on any miss or false positive
 """
 import argparse
 import csv

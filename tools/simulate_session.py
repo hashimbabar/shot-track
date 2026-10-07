@@ -17,7 +17,7 @@ activity is idle / walk / dribble / fidget / shot. shot_id is 0 except in a
 600 ms window centred on each shot's release, where it is the shot number.
 
 Usage:
-    python tools/simulate_session.py --seed 1 --shots 25 --out data/synthetic/session_01.csv
+    python tools/simulate_session.py --seed 1 --shots 25 --out data/sim/session_01.csv
 """
 import argparse
 import csv

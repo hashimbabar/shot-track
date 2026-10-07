@@ -6,8 +6,8 @@ by replay.py). If the session has labels (shot_id column), the labelled shot
 windows are shaded. If the file header says SYNTHETIC, the title says so.
 
 Usage:
-    python tools/plot_session.py data/synthetic/session_01.csv --out docs/img/synthetic_session.png
-    python tools/plot_session.py data/synthetic/session_01.csv --start 20 --end 32 --out zoom.png
+    python tools/plot_session.py data/sim/session_01.csv --out docs/img/synthetic_session.png
+    python tools/plot_session.py data/sim/session_01.csv --start 20 --end 32 --out zoom.png
 """
 import argparse
 import os
