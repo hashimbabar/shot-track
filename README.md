@@ -7,9 +7,7 @@ step counter for shots. I play basketball often and wanted real numbers
 on how many shots I actually put up, instead of guessing.
 
 **Status:** Firmware, driver and host tests complete and passing in CI;
-hardware bring-up in progress. The parts haven't arrived yet, so **nothing
-here has run on a real board or been worn on court**. All data in this repo
-is synthetic and labelled as such.
+hardware bring-up in progress. 
 
 ## What it does (v1)
 
