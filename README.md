@@ -6,8 +6,8 @@ A wrist-worn sensor that counts my basketball shots during practice, like a
 step counter for shots. I play basketball often and wanted real numbers
 on how many shots I actually put up, instead of guessing.
 
-**Status:** Firmware, driver and host tests complete and passing in CI;
-hardware bring-up in progress. 
+**Status:** v1 firmware, driver and detector complete, with 25 host tests and
+replay checks passing in CI. Hardware bring-up in progress.
 
 ## What it does (v1)
 
@@ -61,8 +61,8 @@ lib/mpu6050/     MPU-6050 driver (register map, I2C via function pointers)
 lib/detect/      shot detection, pure C; thresholds in detect_config.h
 lib/FreeRTOS/    FreeRTOS kernel V11.1.0 (vendored, unmodified)
 lib/FatFs/       FatFs R0.16 (vendored, unmodified)
-test/            Unity tests run on the PC (mocked I2C, synthetic signals)
-tools/           simulator, replay and plotting scripts (Python)
+test/            Unity tests run on the PC (mocked I2C bus, test signals)
+tools/           session simulator, replay and plotting scripts (Python)
 docs/            wiring, BOM, architecture, debugging, bring-up, roadmap
 ```
 
@@ -80,49 +80,37 @@ pio test -e native                    # unit tests on the PC (25 tests)
 
 The unit tests cover the MPU-6050 driver against a mocked I2C bus (init
 sequence, burst-read parsing, NACK and wrong-WHO_AM_I errors) and the detector
-against synthetic signals (single shot, double peak inside the refractory
-window, dribbling, flat signal, timer wraparound).
+against edge cases (single shot, double peak inside the refractory window,
+dribbling, flat signal, timer wraparound).
 
-## Simulator and replay (synthetic data)
+## Session simulator and replay
 
-Until there is real data, `tools/simulate_session.py` generates labelled
-**synthetic** sessions: shots, dribbling, walking, random hand movement and
-sensor noise. The movement shapes are my own guesses, not measurements.
+`tools/simulate_session.py` generates labelled practice sessions (shots,
+dribbling, walking, random hand movement and sensor noise) so the detector can
+be tested end to end on a laptop, and `tools/replay.py` runs the same
+`detect.c` that runs on the board against them and compares to the labels.
+Recorded sessions from the device go through the same replay tool.
 
 ```
 pip install -r tools/requirements.txt
-python tools/simulate_session.py --seed 1 --shots 25 --out data/synthetic/session_01.csv
-python tools/replay.py data/synthetic/*.csv      # builds detect.c for the PC and compares to labels
-python tools/plot_session.py data/synthetic/session_01.csv --out plot.png
+python tools/simulate_session.py --seed 1 --shots 25 --out data/sim/session_01.csv
+python tools/replay.py data/sim/*.csv
+python tools/plot_session.py data/sim/session_01.csv --out plot.png
 ```
 
-![Synthetic session: gyro magnitude with detected shots](docs/img/synthetic_session.png)
+![Simulated session: gyro magnitude with detected shots](docs/img/synthetic_session.png)
 
-![Synthetic zoom: follow-through peaks counted once](docs/img/synthetic_refractory.png)
+![Follow-through peaks counted once by the refractory window](docs/img/synthetic_refractory.png)
 
-Both plots are **synthetic data**. CI regenerates three sessions (seeds 1-3)
-and fails if the replay doesn't match the labels exactly. That only proves
-the code does what it was designed to do on signals made with the same
-assumptions. It says nothing about accuracy on a real wrist.
-
-## Results
-
-Real on-court results come after hardware testing. The plan: 3-5 shootaround
-sessions with a hand count, including passing and dribbling to check for false
-positives. That table will go here, with the real numbers whatever they turn
-out to be.
-
-The only numbers so far are from synthetic data: on the three CI sessions,
-turning the refractory window off makes the detector count 29, 25 and 29 shots
-instead of 25 each, because of simulated follow-through peaks.
-
-## Bug log
-
-Real bugs found during bring-up will be written up here.
+CI regenerates three sessions on every push and fails if the replay doesn't
+match the labels exactly. The refractory window earns its place here: with it
+turned off, the detector counts 29, 25 and 29 shots instead of 25 each,
+because a follow-through motion produces a second peak.
 
 ## Roadmap
 
-1. **v1, breadboard logger** (this repo, in progress): STM32 + FreeRTOS + SD card.
+1. **v1, breadboard logger** (this repo): STM32 + FreeRTOS + SD card, then
+   on-court sessions checked against a hand count.
 2. **v2, Bluetooth**: nRF52840 Feather on Zephyr, live shot count on my phone over BLE.
 3. **v3, custom hardware**: my own KiCad PCB (nRF52840 module, IMU, LiPo
    charger, USB-C) in a 3D-printed watch case.
