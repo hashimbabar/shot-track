@@ -81,6 +81,10 @@ void test_single_flick_is_one_shot_at_the_right_time(void)
     /* The filter delays the peak by roughly 10 ms; allow 30 ms. */
     TEST_ASSERT_UINT32_WITHIN(30, 1000, shots[0].t_ms);
     TEST_ASSERT_TRUE(shots[0].peak_gyro_dps > DETECT_GYRO_THRESHOLD_DPS);
+    /* Confirmed after the peak, once the filtered gyro falls below the
+     * release level. For a 25 ms wide flick that is well under 150 ms. */
+    TEST_ASSERT_TRUE(shots[0].confirm_ms > shots[0].t_ms);
+    TEST_ASSERT_TRUE(shots[0].confirm_ms - shots[0].t_ms < 150u);
 }
 
 void test_two_peaks_inside_refractory_window_count_once(void)

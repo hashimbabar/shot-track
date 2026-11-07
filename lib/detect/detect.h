@@ -35,6 +35,7 @@ typedef struct {
 /* What gets reported for each detected shot. */
 typedef struct {
     uint32_t t_ms;              /* time of the gyro peak */
+    uint32_t confirm_ms;        /* time of the sample that confirmed it (peak over) */
     float peak_gyro_dps;        /* filtered gyro magnitude at the peak */
     float peak_accel_g;         /* largest filtered accel magnitude in the candidate */
 } detect_shot_t;
@@ -61,7 +62,8 @@ void detect_init(detect_t *d);
 /*
  * Feed one sample. Returns true when a shot has just been confirmed, and
  * fills *shot (if not NULL). A shot is confirmed when its peak is over,
- * so it is reported a little after the peak itself.
+ * so it is reported a little after the peak itself: shot->confirm_ms -
+ * shot->t_ms is that detection delay (see docs/latency.md).
  */
 bool detect_update(detect_t *d, const detect_sample_t *s, detect_shot_t *shot);
 

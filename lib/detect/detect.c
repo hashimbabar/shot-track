@@ -34,9 +34,11 @@ static float magnitude(float x, float y, float z)
 }
 
 /* Called when a candidate peak ends. Decides whether it counts. */
-static bool finish_candidate(detect_t *d, detect_shot_t *shot)
+static bool finish_candidate(detect_t *d, uint32_t now_ms, detect_shot_t *shot)
 {
-    const detect_shot_t *c = &d->cand;
+    detect_shot_t *c = &d->cand;
+
+    c->confirm_ms = now_ms;
 
     if (c->peak_accel_g < DETECT_MIN_ACCEL_G) {
         d->rejected_accel++;
@@ -96,7 +98,7 @@ bool detect_update(detect_t *d, const detect_sample_t *s, detect_shot_t *shot)
 
     if (d->gyro_f < DETECT_GYRO_THRESHOLD_DPS * DETECT_RELEASE_RATIO) {
         d->in_peak = false;
-        return finish_candidate(d, shot);
+        return finish_candidate(d, s->t_ms, shot);
     }
     return false;
 }

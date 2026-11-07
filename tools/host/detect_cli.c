@@ -5,7 +5,7 @@
  * MPU-6050 counts; extra columns are ignored, lines starting with '#' are
  * skipped) and prints one line per detected shot:
  *
- *   shot,<t_ms>,<peak_gyro_dps>,<peak_accel_mg>
+ *   shot,<t_ms>,<peak_gyro_dps>,<peak_accel_mg>,<confirm_ms>
  *   count,<n>
  *
  * It's the same detect.c the firmware runs, compiled for the PC, so a
@@ -68,8 +68,9 @@ int main(int argc, char **argv)
         s.gz_dps = (float)gz / GYRO_LSB_PER_DPS;
 
         if (detect_update(&det, &s, &shot)) {
-            printf("shot,%lu,%.0f,%.0f\n", (unsigned long)shot.t_ms,
-                   shot.peak_gyro_dps, shot.peak_accel_g * 1000.0f);
+            printf("shot,%lu,%.0f,%.0f,%lu\n", (unsigned long)shot.t_ms,
+                   shot.peak_gyro_dps, shot.peak_accel_g * 1000.0f,
+                   (unsigned long)shot.confirm_ms);
         }
     }
     fclose(f);
