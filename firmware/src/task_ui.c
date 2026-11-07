@@ -29,12 +29,13 @@ void app_button_isr(void)
 
 static void print_stats(void)
 {
-    console_printf("samples %lu missed %lu i2c_err %lu | shots %lu | "
+    console_printf("samples %lu missed %lu i2c_err %lu | shots %lu (last +%lu ms) | "
                    "log %s rows %lu q_full %lu sd_err %lu\r\n",
                    (unsigned long)g_stats.samples,
                    (unsigned long)g_stats.missed_ticks,
                    (unsigned long)g_stats.i2c_errors,
                    (unsigned long)g_stats.shots,
+                   (unsigned long)g_stats.last_shot_delay_ms,
                    g_stats.logging ? "on" : "off",
                    (unsigned long)g_stats.log_rows,
                    (unsigned long)(g_stats.log_q_full + g_stats.shot_log_drops),

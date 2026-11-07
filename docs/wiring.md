@@ -51,6 +51,7 @@ firmware to keep it small.
 | Push button leg 2 | GND | - | black | Pressed = PB0 reads 0. Starts/stops a logging session |
 | Logic analyzer CH0 | D9 | PA8 | grey | High while the IMU is read (one pulse per sample) |
 | Logic analyzer CH1 | D10 | PA11 | grey | High while the logger writes to the SD card |
+| Logic analyzer / scope CH2 | D2 | PA12 | grey | Short pulse when a shot is confirmed (see [latency.md](latency.md)) |
 | Logic analyzer GND | GND | - | black | Always connect the analyzer's ground |
 | LED | - | PB3 (D13) | - | On-board green LD3. Nothing to wire |
 

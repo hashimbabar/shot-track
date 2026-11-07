@@ -59,6 +59,7 @@ typedef struct {
             uint32_t t_ms;
             uint16_t peak_dps;
             uint16_t peak_mg;   /* milli-g, to avoid printing floats */
+            uint16_t delay_ms;  /* peak to confirmation (docs/latency.md) */
         } shot;
     } u;
 } log_record_t;
@@ -83,6 +84,7 @@ typedef struct {
     volatile uint32_t log_q_full;     /* sampling task: samples the logger lost */
     volatile uint32_t shots;          /* detect task */
     volatile uint32_t shot_log_drops; /* detect task: shot events the logger lost */
+    volatile uint32_t last_shot_delay_ms; /* detect task: peak to confirmation, last shot */
     volatile uint32_t log_rows;       /* logger task */
     volatile uint32_t sd_errors;      /* logger task */
     volatile bool imu_ready;          /* sampling task */

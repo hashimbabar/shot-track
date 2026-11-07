@@ -29,12 +29,15 @@
 #define SD_CS_GPIO_PORT    GPIOA
 #define SD_CS_PIN          GPIO_PIN_4
 
-/* Debug pins for the logic analyzer:
+/* Debug pins for the logic analyzer and scope:
  *   PA8  (D9)  high while the sampling task reads the IMU
- *   PA11 (D10) high while the logger writes to the SD card */
+ *   PA11 (D10) high while the logger writes to the SD card
+ *   PA12 (D2)  short pulse when the detect task confirms a shot
+ *              (docs/latency.md) */
 #define DBG_GPIO_PORT      GPIOA
 #define DBG_SAMPLE_PIN     GPIO_PIN_8
 #define DBG_SD_PIN         GPIO_PIN_11
+#define DBG_SHOT_PIN       GPIO_PIN_12
 
 /* USART2 goes to the ST-LINK's USB serial port: TX = PA2, RX = PA15. */
 #define CONSOLE_BAUD       115200

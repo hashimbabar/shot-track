@@ -35,8 +35,14 @@ void detect_task(void *arg)
             continue;
         }
 
+        /* Pulse PA12 as soon as the shot is confirmed, before anything
+         * else, so a scope sees the earliest moment the firmware knows.
+         * The pulse lasts as long as the notify below, a few us. */
+        HAL_GPIO_WritePin(DBG_GPIO_PORT, DBG_SHOT_PIN, GPIO_PIN_SET);
         g_stats.shots = detect_shot_count(&det);
+        g_stats.last_shot_delay_ms = shot.confirm_ms - shot.t_ms;
         xTaskNotify(g_ui_task, UI_EVT_SHOT, eSetBits);
+        HAL_GPIO_WritePin(DBG_GPIO_PORT, DBG_SHOT_PIN, GPIO_PIN_RESET);
 
         if (g_stats.logging) {
             log_record_t rec;
@@ -44,6 +50,7 @@ void detect_task(void *arg)
             rec.u.shot.t_ms = shot.t_ms;
             rec.u.shot.peak_dps = (uint16_t)shot.peak_gyro_dps;
             rec.u.shot.peak_mg = (uint16_t)(shot.peak_accel_g * 1000.0f);
+            rec.u.shot.delay_ms = (uint16_t)(shot.confirm_ms - shot.t_ms);
             if (xQueueSend(g_log_q, &rec, 0) != pdTRUE) {
                 g_stats.shot_log_drops++;
             }

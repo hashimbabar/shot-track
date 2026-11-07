@@ -100,8 +100,8 @@ void board_gpio_init(void)
     gpio.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LED_GPIO_PORT, &gpio);
 
-    HAL_GPIO_WritePin(DBG_GPIO_PORT, DBG_SAMPLE_PIN | DBG_SD_PIN, GPIO_PIN_RESET);
-    gpio.Pin = DBG_SAMPLE_PIN | DBG_SD_PIN;
+    HAL_GPIO_WritePin(DBG_GPIO_PORT, DBG_SAMPLE_PIN | DBG_SD_PIN | DBG_SHOT_PIN, GPIO_PIN_RESET);
+    gpio.Pin = DBG_SAMPLE_PIN | DBG_SD_PIN | DBG_SHOT_PIN;
     gpio.Speed = GPIO_SPEED_FREQ_HIGH; /* sharp edges for the logic analyzer */
     HAL_GPIO_Init(DBG_GPIO_PORT, &gpio);
 

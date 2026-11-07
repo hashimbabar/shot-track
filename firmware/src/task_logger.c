@@ -16,7 +16,8 @@
  * File format (LOGnnnnn.CSV):
  *   # comment lines start with '#'
  *   seq,t_ms,ax,ay,az,gx,gy,gz        raw sensor counts
- *   # shot,t_ms,peak_dps,peak_mg      one line per detected shot
+ *   # shot,t_ms,peak_dps,peak_mg,delay_ms   one line per detected shot
+ *                                           (delay = peak to confirmation)
  */
 #include <stdio.h>
 #include <string.h>
@@ -82,9 +83,10 @@ static void write_record(const log_record_t *r)
                      s->raw.gx, s->raw.gy, s->raw.gz);
         g_stats.log_rows++;
     } else {
-        n = snprintf(line, sizeof(line), "# shot,%lu,%u,%u\n",
+        n = snprintf(line, sizeof(line), "# shot,%lu,%u,%u,%u\n",
                      (unsigned long)r->u.shot.t_ms,
-                     (unsigned)r->u.shot.peak_dps, (unsigned)r->u.shot.peak_mg);
+                     (unsigned)r->u.shot.peak_dps, (unsigned)r->u.shot.peak_mg,
+                     (unsigned)r->u.shot.delay_ms);
     }
     if (n > 0 && n < (int)sizeof(line)) {
         append(line, (size_t)n);
