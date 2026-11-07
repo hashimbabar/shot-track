@@ -9,20 +9,26 @@ install.
 1. Open the repo folder (the one with `platformio.ini`) in VS Code with the
    PlatformIO extension installed.
 2. Plug in the Nucleo.
-3. Open the **Run and Debug** panel (Ctrl+Shift+D) and choose
-   **PIO Debug**, then press F5. PlatformIO builds a debug version
-   (less optimisation, full debug info), flashes it, and stops at `main()`.
-4. Set breakpoints by clicking left of a line number. F5 continues, F10
+3. In the blue PlatformIO bar at the bottom, click the environment name
+   and pick **env:nucleo_l432kc_debug**.
+4. Open the **Run and Debug** panel (Ctrl+Shift+D) and choose
+   **PIO Debug**, then press F5. PlatformIO builds the debug version
+   (`-Og`, full debug info), flashes it, and stops at `main()`.
+5. Set breakpoints by clicking left of a line number. F5 continues, F10
    steps over, F11 steps in.
-5. The left panel shows variables, the call stack, and **Peripherals**,
+6. The left panel shows variables, the call stack, and **Peripherals**,
    which lists the STM32 registers by name (from the SVD file). Use it to
    check, for example, that `TIM6 → ARR` is 49.
 
 ## From the command line
 
 ```
-pio debug -e nucleo_l432kc --interface=gdb -- -x .pioinit
+pio debug -e nucleo_l432kc_debug --interface=gdb -- -x .pioinit
 ```
+
+`env:nucleo_l432kc_debug` in `platformio.ini` is the normal firmware built
+with `-Og -g3` and set to stop at `main()`. PlatformIO starts OpenOCD for
+the onboard ST-LINK and connects GDB to it; there's nothing else to install.
 
 Useful GDB commands once it stops:
 
@@ -85,6 +91,64 @@ The firmware drives two debug pins (wiring in [wiring.md](wiring.md)):
 
 In PulseView: sample at ≥ 1 MHz, add a "Timing" decoder on CH0 to get the
 period of every pulse, and look at the minimum and maximum.
+
+## Checking I2C transactions with a logic analyzer (PulseView)
+
+Use this when the IMU misbehaves: no ACK, wrong WHO_AM_I, or numbers that
+look like the wrong register. It shows exactly which bytes went on the bus,
+so you can compare them byte by byte with the register map.
+
+**Hook-up** (any cheap 8-channel "Saleae-compatible" analyzer):
+
+| Analyzer | Connect to | Notes |
+|---|---|---|
+| CH0 | SCL, Nucleo D1 (PA9) | Clip onto the jumper at the GY-521, or a breadboard hole in the same row |
+| CH1 | SDA, Nucleo D0 (PA10) | |
+| GND | Nucleo GND | Always. Without it the capture is noise |
+
+**PulseView setup:**
+
+1. Install PulseView (sigrok). For the Saleae clones pick the
+   **fx2lafw** driver. On Windows, sigrok's Zadig tool installs the USB
+   driver the first time.
+2. Sample rate **8 MHz** or more (at least 10x the 400 kHz bus), and
+   1-2 M samples, which is a few hundred ms.
+3. Trigger: falling edge on CH1 (SDA). The first falling SDA while SCL
+   is high is the START of a transaction.
+4. Add the **I²C** decoder: SCL = CH0, SDA = CH1. Set "address format"
+   to *unshifted* so it shows 0x68 instead of 0xD0.
+5. Press the Nucleo's reset button just after starting the capture, to
+   catch the init sequence.
+
+**What a correct capture looks like** (addresses as 7-bit):
+
+| Transaction | Bytes on the bus | Source |
+|---|---|---|
+| WHO_AM_I read | START, `0x68 W` ACK, `0x75` ACK, repeated START, `0x68 R` ACK, `0x68` NACK, STOP | first thing `mpu6050_init` does |
+| Reset | START, `0x68 W` ACK, `0x6B` ACK, `0x80` ACK, STOP | |
+| Wake | START, `0x68 W` ACK, `0x6B` ACK, `0x01` ACK, STOP | ~100 ms after the reset |
+| Config writes | `0x1A`=`0x03`, `0x19`=`0x04`, `0x1B`=`0x18`, `0x1C`=`0x18`, each its own transaction | same order as `test_init_writes_registers_in_expected_order` |
+| Each sample | START, `0x68 W`, `0x3B`, repeated START, `0x68 R`, 14 data bytes (ACK on all but the last, NACK on the last), STOP | every 5 ms, inside a PA8 pulse |
+
+The init sequence should match the unit test's expected list exactly. If
+the test passes but the bus shows something different, the bug is in the
+HAL adapter (`firmware/src/i2c_bus.c`) or the wiring, not the driver.
+
+**Reading the failures:**
+
+- **Address NACKed** (`0x68 W` then NACK): nothing at 0x68. Check power,
+  and AD0: if it's high, the address is 0x69.
+- **SCL or SDA never goes high:** missing pull-ups, or a line shorted to
+  GND.
+- **Wrong register in the data:** the register byte after `0x68 W` is the
+  one being read or written. Compare it with `mpu6050_regs.h` and the
+  register map.
+- **Stretched or stuck clock:** SCL held low by the sensor for a long time.
+  Note how long; the HAL times out after 5 ms (`I2C_TIMEOUT_MS`).
+
+Save captures you use as evidence in `docs/captures/` (PulseView's `.sr`
+file plus a screenshot), and write what they showed in the README's bug
+log.
 
 ## Debug vs release builds
 

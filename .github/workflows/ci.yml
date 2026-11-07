@@ -21,6 +21,8 @@ jobs:
       - run: pip install platformio
       - name: build
         run: pio run -e nucleo_l432kc
+      - name: build the debug variant
+        run: pio run -e nucleo_l432kc_debug
       # FreeRTOS's Cortex-M4F port needs hard-float. Check the linked ELF
       # really says so, instead of trusting that fpu.py did its job.
       - name: check the firmware uses the hardware fpu
