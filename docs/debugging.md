@@ -147,8 +147,8 @@ HAL adapter (`firmware/src/i2c_bus.c`) or the wiring, not the driver.
   Note how long; the HAL times out after 5 ms (`I2C_TIMEOUT_MS`).
 
 Save captures you use as evidence in `docs/captures/` (PulseView's `.sr`
-file plus a screenshot), and write what they showed in the README's bug
-log.
+file plus a screenshot), and write what they showed in
+[bug-log.md](bug-log.md).
 
 ## Debug vs release builds
 
