@@ -1,0 +1,7 @@
+# Lab-only extras for tools/measure_current.py (not needed for CI or replay).
+pyvisa>=1.13
+# Pure-Python VISA backend (use --backend @py). Not needed if NI-VISA or
+# Keysight IO Libraries is installed.
+pyvisa-py>=0.7
+# USB support for pyvisa-py (also needs libusb on Linux/macOS).
+pyusb>=1.2

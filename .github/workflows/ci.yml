@@ -70,3 +70,7 @@ jobs:
           done
       - name: replay through the host-built detector
         run: python tools/replay.py --check data/sim/*.csv
+      # Smoke test only: fake meter, no hardware. Real measurements are taken
+      # in the lab and are never generated in CI.
+      - name: current logger dry run
+        run: python tools/measure_current.py --dry-run --no-prompt --phases sleep:1,active:1 --interval 0.1 --settle 0.2

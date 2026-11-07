@@ -22,3 +22,6 @@ data/sim/*.csv
 
 # Personal study notes, kept out of the repo
 WALKTHROUGH.md
+
+# Dry-run output of tools/measure_current.py (fake readings)
+data/current/DRYRUN_*
